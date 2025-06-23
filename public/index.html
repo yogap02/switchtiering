@@ -79,7 +79,7 @@
 
         .label {
             width: 40px;
-            height: 80px;
+            height: 100px;
             font-weight: bold;
             text-align: center;
             margin-right: 10px;
@@ -106,7 +106,7 @@
             flex-wrap: wrap;
             align-items: flex-start;
             /* Align items to the top of the slot */
-            min-height: 90px;
+            min-height: 110px;
             /* Minimum height for empty slots */
             gap: 5px;
             flex-grow: 1;
@@ -128,8 +128,8 @@
             font-size: 0.8em;
             box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
             text-align: center;
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             /* Keep height fixed to control item size */
             flex-shrink: 0;
             /* Prevent items from shrinking in flex containers */
@@ -289,179 +289,271 @@
     </div>
 
     <div class="right-panel">
-        <div class="search">
-            <h3>Switches List</h3>
-            <input type="text" id="searchInput" placeholder="Search switches...">
+        <div class="search" style="display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0;">Switches List</h3>
+            <button id="addSwitchBtn" title="Add Switch" style="background: none; border: none; color: #fff; font-size: 1.5em; cursor: pointer; margin-left: 8px; padding: 0; display: flex; align-items: center;">
+                <span style="font-size: 1.5em; line-height: 1;">&#43;</span>
+            </button>
         </div>
-        <div class="scrollable-switches slot" id="pool">
+        <div style="padding: 10px; border-bottom: 2px solid #333;">
+            <input type="text" id="searchInput" placeholder="Search switches..." style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 1em; background: #222; color: white;" />
+        </div>
+        <div class="scrollable-switches slot" id="pool"></div>
+    </div>
+
+    <!-- Modal for adding switch -->
+    <div id="addSwitchModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#222; padding:24px 20px 16px 20px; border-radius:8px; min-width:300px; max-width:90vw; box-shadow:0 4px 24px #000; position:relative;">
+            <button id="closeModalBtn" style="position:absolute; top:8px; right:12px; background:none; border:none; color:#fff; font-size:1.2em; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0;">Add New Switch</h3>
+            <form id="addSwitchForm">
+                <label style="display:block; margin-bottom:8px;">Name:<br>
+                    <input id="switchNameInput" type="text" required style="width:100%; padding:6px; border-radius:4px; border:none; background:#333; color:#fff; margin-top:2px;">
+                </label>
+                <label style="display:block; margin-bottom:12px;">Image URL:<br>
+                    <input id="switchImgInput" type="url" required style="width:100%; padding:6px; border-radius:4px; border:none; background:#333; color:#fff; margin-top:2px;">
+                </label>
+                <button type="submit" style="background:#69db7c; color:#111; border:none; border-radius:4px; padding:8px 16px; font-weight:bold; cursor:pointer; width:100%;">Add Switch</button>
+            </form>
         </div>
     </div>
 
     <script>
-        const pool = document.getElementById('pool');
-        const searchInput = document.getElementById('searchInput');
-        const resetButton = document.getElementById('resetButton');
-        const exportButton = document.getElementById('exportButton');
-        const tierSlots = document.querySelectorAll('#tier-list .slot');
+        window.addEventListener('DOMContentLoaded', function() {
+            const pool = document.getElementById('pool');
+            const resetButton = document.getElementById('resetButton');
+            const exportButton = document.getElementById('exportButton');
+            const tierSlots = document.querySelectorAll('#tier-list .slot');
 
-        let allSwitchData = [];
-        let currentSwitchData = [];
-        let draggedItem = null;
+            let allSwitchData = [];
+            let currentSwitchData = [];
+            let draggedItem = null;
 
-        function renderSwitches(filter = '') {
-            pool.innerHTML = '';
-            const filteredSwitches = currentSwitchData.filter(s =>
-                s.name.toLowerCase().includes(filter.toLowerCase())
-            );
+            function renderSwitches(filter = '') {
+                pool.innerHTML = '';
+                const filteredSwitches = currentSwitchData.filter(s =>
+                    s.name.toLowerCase().includes(filter.toLowerCase())
+                );
 
-            filteredSwitches.forEach(s => {
-                const div = document.createElement('div');
-                div.className = 'item';
-                div.draggable = true;
-                div.dataset.switchName = s.name;
-                div.innerHTML = `
+                filteredSwitches.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'item';
+                    div.draggable = true;
+                    div.dataset.switchName = s.name;
+                    div.innerHTML = `
                     <img src="${s.img}" alt="${s.name}" />
                     <div class="item-label"><span>${s.name}</span></div>
                 `;
-                pool.appendChild(div);
-            });
-            initDragAndDrop(); // Re-initialize drag and drop for newly rendered items
-        }
-
-        function initDragAndDrop() {
-            const draggables = document.querySelectorAll('.item');
-            const allDropTargets = document.querySelectorAll('.slot'); // Select all slots, including the pool
-
-            draggables.forEach(item => {
-                // Remove existing listeners to prevent duplicates (important after re-rendering)
-                item.removeEventListener('dragstart', handleDragStart);
-                item.removeEventListener('dragend', handleDragEnd);
-
-                item.addEventListener('dragstart', handleDragStart);
-                item.addEventListener('dragend', handleDragEnd);
-            });
-
-            allDropTargets.forEach(slot => {
-                // Remove existing listeners
-                slot.removeEventListener('dragover', handleDragOver);
-                slot.removeEventListener('dragleave', handleDragLeave);
-                slot.removeEventListener('drop', handleDrop);
-
-                // Add new listeners
-                slot.addEventListener('dragover', handleDragOver);
-                slot.addEventListener('dragleave', handleDragLeave);
-                slot.addEventListener('drop', handleDrop);
-            });
-        }
-
-        function handleDragStart(e) {
-            draggedItem = this; // 'this' refers to the item being dragged
-            e.dataTransfer.setData('text/plain', this.dataset.switchName || this.querySelector('.item-label span').textContent);
-            e.dataTransfer.effectAllowed = 'move';
-            setTimeout(() => this.classList.add('dragging-hidden'), 0);
-        }
-
-        function handleDragEnd() {
-            if (draggedItem) {
-                draggedItem.classList.remove('dragging-hidden');
-                draggedItem = null;
+                    pool.appendChild(div);
+                });
+                initDragAndDrop(); // Re-initialize drag and drop for newly rendered items
             }
-        }
 
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            this.classList.add('drag-over');
-        }
+            function initDragAndDrop() {
+                const draggables = document.querySelectorAll('.item');
+                const allDropTargets = document.querySelectorAll('.slot'); // Select all slots, including the pool
 
-        function handleDragLeave() {
-            this.classList.remove('drag-over');
-        }
+                draggables.forEach(item => {
+                    // Remove existing listeners to prevent duplicates (important after re-rendering)
+                    item.removeEventListener('dragstart', handleDragStart);
+                    item.removeEventListener('dragend', handleDragEnd);
 
-        function handleDrop(e) {
-            e.preventDefault();
-            this.classList.remove('drag-over');
+                    item.addEventListener('dragstart', handleDragStart);
+                    item.addEventListener('dragend', handleDragEnd);
+                });
 
-            if (draggedItem) {
-                // If dropping into the pool, ensure it's re-initialized for dragging
-                if (this.id === 'pool') {
-                    this.appendChild(draggedItem);
-                    // No need to re-initDrag() here, as the item itself retains its draggable property
-                    // and its listeners are still active. The renderSwitches function
-                    // will re-attach all listeners when it's called (e.g. on search or reset).
-                } else {
-                    this.appendChild(draggedItem);
+                allDropTargets.forEach(slot => {
+                    // Remove existing listeners
+                    slot.removeEventListener('dragover', handleDragOver);
+                    slot.removeEventListener('dragleave', handleDragLeave);
+                    slot.removeEventListener('drop', handleDrop);
+
+                    // Add new listeners
+                    slot.addEventListener('dragover', handleDragOver);
+                    slot.addEventListener('dragleave', handleDragLeave);
+                    slot.addEventListener('drop', handleDrop);
+                });
+            }
+
+            function handleDragStart(e) {
+                draggedItem = this; // 'this' refers to the item being dragged
+                e.dataTransfer.setData('text/plain', this.dataset.switchName || this.querySelector('.item-label span').textContent);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => this.classList.add('dragging-hidden'), 0);
+            }
+
+            function handleDragEnd() {
+                if (draggedItem) {
+                    draggedItem.classList.remove('dragging-hidden');
+                    draggedItem = null;
                 }
             }
-        }
 
-        // --- Action Buttons ---
-        resetButton.addEventListener('click', () => {
-            // Clear all tier slots
-            tierSlots.forEach(slot => {
-                while (slot.firstChild) {
-                    pool.appendChild(slot.firstChild); // Move items back to pool
+            function handleDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            }
+
+            function handleDragLeave() {
+                this.classList.remove('drag-over');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+
+                if (draggedItem) {
+                    // If dropping into the pool, ensure it's re-initialized for dragging
+                    if (this.id === 'pool') {
+                        this.appendChild(draggedItem);
+                        // No need to re-initDrag() here, as the item itself retains its draggable property
+                        // and its listeners are still active. The renderSwitches function
+                        // will re-attach all listeners when it's called (e.g. on search or reset).
+                    } else {
+                        this.appendChild(draggedItem);
+                    }
                 }
-            });
-            // Re-render all switches in the pool (effectively resetting their order too)
-            renderSwitches();
-            searchInput.value = ''; // Clear search input
-        });
+            }
 
-        exportButton.addEventListener('click', () => {
-            const tierListElement = document.getElementById('tier-list');
-            // Temporarily hide scrollbars for cleaner screenshot if any
-            const originalOverflow = document.body.style.overflow;
-            document.body.style.overflow = 'hidden';
-
-            html2canvas(tierListElement, {
-                scale: 2, // Increase scale for better quality image
-                logging: false, // Disable console logs from html2canvas
-                useCORS: true // Important for images loaded from different origins
-            }).then(canvas => {
-                // Restore original overflow
-                document.body.style.overflow = originalOverflow;
-
-                const link = document.createElement('a');
-                link.download = 'keyboard-switch-tier-list.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click(); // Programmatically click the link to trigger download
-            }).catch(error => {
-                document.body.style.overflow = originalOverflow; // Ensure overflow is reset even on error
-                console.error('Error exporting tier list:', error);
-                alert('Could not export image. Please check the console for details.');
-            });
-        });
-
-        // --- Initial Load ---
-        searchInput.addEventListener('input', (e) => {
-            renderSwitches(e.target.value);
-        });
-        const firebaseConfig = {
-            apiKey: window.ENV?.FIREBASE_API_KEY,
-            authDomain: window.ENV?.FIREBASE_AUTH_DOMAIN,
-            projectId: window.ENV?.FIREBASE_PROJECT_ID,
-            appId: window.ENV?.FIREBASE_APP_ID,
-            databaseURL: window.ENV?.FIREBASE_DATABASE_URL
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        database.ref('/switches').once('value')
-            .then((snapshot) => {
-                let switches = []
-                const data = snapshot.val()
-                for (a in data) {
-                    console.log('data a:', data[a]);
-                    switches.push(data[a]);
-                }
-                currentSwitchData = [...switches];
+            // --- Action Buttons ---
+            resetButton.addEventListener('click', () => {
+                // Clear all tier slots
+                tierSlots.forEach(slot => {
+                    while (slot.firstChild) {
+                        pool.appendChild(slot.firstChild); // Move items back to pool
+                    }
+                });
+                // Re-render all switches in the pool (effectively resetting their order too)
                 renderSwitches();
-            })
-            .catch((err) => {
-                console.error('Realtime Database fetch failed:', err);
+                searchInput.value = ''; // Clear search input
             });
+
+            exportButton.addEventListener('click', () => {
+                const tierListElement = document.getElementById('tier-list');
+                // Temporarily hide scrollbars for cleaner screenshot if any
+                const originalOverflow = document.body.style.overflow;
+                document.body.style.overflow = 'hidden';
+
+                html2canvas(tierListElement, {
+                    scale: 2, // Increase scale for better quality image
+                    logging: false, // Disable console logs from html2canvas
+                    useCORS: true // Important for images loaded from different origins
+                }).then(canvas => {
+                    // Restore original overflow
+                    document.body.style.overflow = originalOverflow;
+
+                    const link = document.createElement('a');
+                    link.download = 'keyboard-switch-tier-list.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click(); // Programmatically click the link to trigger download
+                }).catch(error => {
+                    document.body.style.overflow = originalOverflow; // Ensure overflow is reset even on error
+                    console.error('Error exporting tier list:', error);
+                    alert('Could not export image. Please check the console for details.');
+                });
+            });
+
+            // --- Initial Load ---
+            const searchInput = document.getElementById('searchInput');
+            // Defensive check for searchInput
+            if (!searchInput) {
+                console.error('Element with id="searchInput" not found. Please ensure the input exists in your HTML.');
+            } else {
+                searchInput.addEventListener('input', (e) => {
+                    renderSwitches(e.target.value);
+                });
+            }
+            const firebaseConfig = {
+                apiKey: window.ENV?.FIREBASE_API_KEY,
+                authDomain: window.ENV?.FIREBASE_AUTH_DOMAIN,
+                projectId: window.ENV?.FIREBASE_PROJECT_ID,
+                appId: window.ENV?.FIREBASE_APP_ID,
+                databaseURL: window.ENV?.FIREBASE_DATABASE_URL
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
+            database.ref('/switches').once('value')
+                .then((snapshot) => {
+                    let switches = []
+                    const data = snapshot.val()
+                    for (a in data) {
+                        switches.push(data[a]);
+                    }
+                    currentSwitchData = [...switches];
+                    renderSwitches();
+                })
+                .catch((err) => {
+                    console.error('Realtime Database fetch failed:', err);
+                });
+
+            // --- Rate limit for adding switches ---
+            let lastAddTime = 0;
+            const ADD_SWITCH_COOLDOWN = 10000; // 10 seconds
+
+            // Function to add a new switch option to Firebase Realtime Database
+            function addSwitchOption(switchObj) {
+                const now = Date.now();
+                if (now - lastAddTime < ADD_SWITCH_COOLDOWN) {
+                    alert('Please wait a few seconds before adding another switch.');
+                    return;
+                }
+                lastAddTime = now;
+                database.ref('/switches').push(switchObj)
+                    .then(() => {
+                        console.log('Switch added successfully:', switchObj);
+                        // Optionally, fetch and re-render switches
+                        database.ref('/switches').once('value')
+                            .then((snapshot) => {
+                                let switches = [];
+                                const data = snapshot.val();
+                                for (a in data) {
+                                    switches.push(data[a]);
+                                }
+                                currentSwitchData = [...switches];
+                                renderSwitches();
+                            });
+                    })
+                    .catch((err) => {
+                        console.error('Failed to add switch:', err);
+                    });
+            }
+
+            // Modal logic for adding switch
+            const addSwitchBtn = document.getElementById('addSwitchBtn');
+            const addSwitchModal = document.getElementById('addSwitchModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const addSwitchForm = document.getElementById('addSwitchForm');
+            const switchNameInput = document.getElementById('switchNameInput');
+            const switchImgInput = document.getElementById('switchImgInput');
+
+            addSwitchBtn.addEventListener('click', () => {
+                addSwitchModal.style.display = 'flex';
+                switchNameInput.value = '';
+                switchImgInput.value = '';
+                switchNameInput.focus();
+            });
+            closeModalBtn.addEventListener('click', () => {
+                addSwitchModal.style.display = 'none';
+            });
+            addSwitchModal.addEventListener('click', (e) => {
+                if (e.target === addSwitchModal) addSwitchModal.style.display = 'none';
+            });
+            addSwitchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = switchNameInput.value.trim();
+                const img = switchImgInput.value.trim();
+                if (name && img) {
+                    addSwitchOption({ name, img });
+                    addSwitchModal.style.display = 'none';
+                }
+            });
+
+            // Example usage:
+            // addSwitchOption({ name: 'New Switch', img: 'https://example.com/image.png' });
+        });
     </script>
 </body>
 
