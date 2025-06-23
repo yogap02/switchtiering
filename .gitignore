@@ -2,3 +2,4 @@
 *.backup
 *.log
 node_modules/
+public/env.js
