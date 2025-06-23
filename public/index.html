@@ -437,7 +437,6 @@
         searchInput.addEventListener('input', (e) => {
             renderSwitches(e.target.value);
         });
-        // Firebase config from window.ENV (set in env.js)
         const firebaseConfig = {
             apiKey: window.ENV?.FIREBASE_API_KEY,
             authDomain: window.ENV?.FIREBASE_AUTH_DOMAIN,
