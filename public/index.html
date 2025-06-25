@@ -2,830 +2,177 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Keyboard Switch Tier List</title>
-    <script src="env.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kibod.online - Your Mechanical Keyboard Hub</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter for a modern typeface -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Ensures the Inter font is applied across the page */
         body {
-            font-family: sans-serif;
-            background: #111;
-            color: white;
+            font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            height: 100vh;
-            overflow: auto;
-            /* Enable scrolling on all devices */
         }
 
-        @media (max-width: 900px) {
-            body {
-                flex-direction: column;
-                height: 100vh;
-                min-height: 100vh;
-                overflow: hidden;
-                /* Prevent body scroll on mobile, only right panel scrolls */
+        /* Animated background gradient for a dynamic visual effect, now with black/grey tones */
+        .animated-background {
+            background: linear-gradient(270deg, #0a0a0a, #1a1a1a, #2a2a2a, #1a1a1a, #0a0a0a);
+            /* Dark grey to black gradient */
+            background-size: 500% 500%;
+            /* Ensures the gradient is large enough to animate smoothly */
+            animation: gradient-animation 20s ease infinite;
+            /* Looping animation for background */
+            min-height: 100vh;
+            /* Ensure background covers full viewport height */
+        }
+
+        /* Keyframes for the gradient animation, shifting its position */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
             }
 
-            .left-panel,
-            .right-panel {
-                width: 100% !important;
-                min-width: 0;
-                max-width: 100vw;
-                box-sizing: border-box;
+            50% {
+                background-position: 100% 50%;
             }
 
-            .left-panel {
-                padding: 10px;
-                overflow-y: visible;
-                /* No scroll on left panel */
-            }
-
-            .right-panel {
-                border-left: none;
-                border-top: 2px solid #333;
-                width: 100% !important;
-                min-width: 0;
-                max-width: 100vw;
-                display: flex;
-                flex-direction: column;
-                height: 60vh;
-                /* Set a height for right panel on mobile */
-            }
-
-            .scrollable-switches {
-                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-                gap: 6px;
-                padding: 6px;
-                max-height: 50vh;
-                padding-right: 40px;
-                height: 100%;
-                overflow-y: auto;
-                /* Only this element scrolls on mobile */
-            }
-
-            .scrollable-switches::after {
-                content: '';
-                display: block;
-                width: 40px;
-                /* match your scroll helper + gap */
-                grid-column: span 1;
-                height: 1px;
-                pointer-events: none;
-            }
-
-            .item {
-                width: 80px;
-                height: 80px;
-                font-size: 0.7em;
-            }
-
-            .label {
-                width: 30px;
-                height: 70px;
-                font-size: 1em;
-            }
-
-            .scroll-helper {
-                display: block;
-                position: absolute;
-                top: 70px;
-                right: 8px;
-                width: 36px;
-                height: calc(100% - 80px);
-                background: rgba(255, 255, 255, 0.18);
-                border-radius: 18px;
-                border: 2px solid rgba(255, 255, 255, 0.25);
-                z-index: 100;
-                cursor: grab;
-                touch-action: none;
-                box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.18);
-            }
-
-            .scroll-helper:active {
-                background: rgba(255, 255, 255, 0.32);
-                border-color: rgba(255, 255, 255, 0.4);
+            100% {
+                background-position: 0% 50%;
             }
         }
 
-        @media (min-width: 901px) {
-            .scroll-helper {
-                display: none !important;
-            }
-        }
-
-        .left-panel {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            /* Allow scrolling for tier list if it gets too long */
-            display: flex;
-            flex-direction: column;
-        }
-
-        .right-panel {
-            width: 22%;
-            background: #111;
-            border-left: 2px solid #333;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-            position: relative;
-            /* Include padding/border in width */
-        }
-
-        .right-panel .search {
-            padding: 10px;
-            border-bottom: 2px solid #333;
-        }
-
-        .search input {
-            width: calc(100% - 16px);
-            /* Adjust width for padding */
-            padding: 8px;
-            border-radius: 4px;
-            border: none;
-            font-size: 1em;
-            background: #222;
-            color: white;
-        }
-
-        .scrollable-switches {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            /* Responsive columns */
-            gap: 10px;
-            justify-content: center;
-            align-content: start;
-        }
-
-        .tier {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            padding: 8px;
-        }
-
-        .label {
-            width: 40px;
-            height: 100px;
-            font-weight: bold;
-            text-align: center;
-            margin-right: 10px;
-            border-radius: 4px;
-            padding: 5px;
-            color: black;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2em;
-            /* Make S, A, B labels more prominent */
-        }
-
-        .label h2 {
-            margin: 0;
-            /* Remove default margin from h2 */
-            font-size: 1em;
-            /* Control font size within the label div */
-        }
-
-        .slot {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            /* Align items to the top of the slot */
-            min-height: 110px;
-            /* Minimum height for empty slots */
-            gap: 5px;
-            flex-grow: 1;
-            padding: 5px;
-            border: none;
-            border-radius: 4px;
-        }
-
-        .item {
-            background: #333;
-            border: 1px solid #888;
-            border-radius: 10px;
-            padding: 5px;
-            cursor: grab;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8em;
-            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
-            text-align: center;
-            width: 100px;
-            height: 100px;
-            /* Keep height fixed to control item size */
-            flex-shrink: 0;
-            /* Prevent items from shrinking in flex containers */
-        }
-
-        .item img {
-            max-width: 50px;
-            max-height: 50px;
-            object-fit: contain;
-            margin-bottom: 5px;
-            border-radius: 2px;
-        }
-
-        .item-label {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            padding: 0 2px;
-            box-sizing: border-box;
-            flex-grow: 1;
-            /* Allow label to take available vertical space if content wraps */
-        }
-
-        .item-label span {
-            word-wrap: break-word;
-            white-space: normal;
-            line-height: 1.2;
-        }
-
-        .item:active {
-            cursor: grabbing;
-        }
-
-        /* Tier specific colors */
-        .S {
-            background: #ff6b6b;
-        }
-
-        .A {
-            background: #ffa94d;
-        }
-
-        .B {
-            background: #ffd43b;
-        }
-
-        .C {
-            background: #69db7c;
-        }
-
-        .D {
-            background: #74c0fc;
-        }
-
-        .E {
-            background: #9775fa;
-        }
-
-        .F {
-            background: #f783ff;
-        }
-
-        /* Drag over effect */
-        .slot.drag-over {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: #eee;
-        }
-
-        .dragging-hidden {
+        /* Fade-in animation for content elements to appear smoothly */
+        .fade-in {
+            animation: fadeIn 2s ease-out forwards;
+            /* Applies fade-in effect */
             opacity: 0;
+            /* Starts invisible */
         }
 
-        .top-bar {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            padding: 0 20px;
-        }
-
-        .top-bar h3 {
-            margin: 0 0 10px 0;
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-direction: row;
-            gap: 10px;
-        }
-
-        .action-buttons button {
-            background-color: #555;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background-color 0.2s ease;
-        }
-
-        .action-buttons button:hover {
-            background-color: #777;
-        }
-
-        /* --- 1. Flex wrapper for scroll area --- */
-        .scroll-area {
-            display: flex;
-            flex-direction: row;
-            width: 100%;
-            height: 100%;
-        }
-
-        @media (max-width: 900px) {
-            .scrollable-switches {
-                flex: 1 1 0%;
-                overflow-y: auto;
-                padding: 10px 0 10px 10px;
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-                gap: 10px;
-                justify-content: center;
-                align-content: start;
-                max-height: 50vh;
-                height: 100%;
+        /* Keyframes for the fade-in and slight upward movement animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+                /* Starts slightly below its final position */
             }
 
-            .scroll-helper {
-                display: block;
-                width: 36px;
-                height: 100%;
-                background: rgba(255, 255, 255, 0.18);
-                border-radius: 18px;
-                border: 2px solid rgba(255, 255, 255, 0.25);
-                margin-left: 4px;
-                z-index: 1;
-                cursor: grab;
-                touch-action: none;
-                box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.18);
-            }
-
-            .scroll-helper:active {
-                background: rgba(255, 255, 255, 0.32);
-                border-color: rgba(255, 255, 255, 0.4);
-            }
-
-            /* Remove grid hacks */
-            .scrollable-switches::after {
-                display: none !important;
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                /* Ends at its original position, fully visible */
             }
         }
 
-        @media (max-width: 600px) {
-            .action-buttons {
-                flex-direction: column;
-                width: 100%;
-            }
+        /* Animation delays for sequential appearance of elements */
+        .delay-1 {
+            animation-delay: 0.5s;
+        }
 
-            .action-buttons button {
-                margin: 5px 0 0 0;
-                width: 100%;
+        .delay-2 {
+            animation-delay: 1s;
+        }
+
+        .delay-3 {
+            animation-delay: 1.5s;
+        }
+
+        .delay-4 {
+            animation-delay: 2s;
+        }
+
+        .delay-5 {
+            animation-delay: 2.5s;
+        }
+
+        /* Custom glow effect for the main title, now with a yellow glow */
+        .text-glow {
+            text-shadow: 0 0 8px rgba(253, 224, 71, 0.7), 0 0 15px rgba(253, 224, 71, 0.4);
+            /* Yellow glow */
+        }
+
+        /* Styling for the image header */
+        .header-image {
+            width: 100px;
+            /* Default size for mobile */
+            height: 100px;
+            object-fit: contain;
+            /* Ensures the entire image is visible within its bounds */
+            border-radius: 9999px;
+            /* Makes the image circular */
+            box-shadow: 0 0 15px rgba(253, 224, 71, 0.5);
+            /* Yellow glow around the image */
+        }
+
+        /* Responsive adjustment for image header size on larger screens */
+        @media (min-width: 640px) {
+            .header-image {
+                width: 150px;
+                height: 150px;
             }
         }
     </style>
 </head>
 
-<body>
-    <div class="left-panel">
-        <div class="top-bar">
-            <h3>Mechanical Keyboard Switch Tier List</h3>
-            <div class="action-buttons">
-                <button id="resetButton">Reset</button>
-                <button id="exportButton">Export as Image</button>
+<body class="animated-background text-gray-100 flex items-center justify-center p-4">
+
+    <!-- Main content container, centered and styled with Tailwind CSS -->
+    <div
+        class="bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-xl shadow-2xl p-6 md:p-10 lg:p-14 text-center max-w-4xl w-full border border-yellow-400 border-opacity-30 my-8">
+        <!-- Added my-8 for vertical margin to allow content to breathe and make scrolling apparent -->
+
+        <!-- Header section with the main title and a brief tagline -->
+        <header class="mb-8">
+            <!-- Image header for the logo -->
+            <div class="flex justify-center mb-6 fade-in">
+                <img src="https://images.pexels.com/photos/27296916/pexels-photo-27296916.jpeg" alt="Kibod Online" width="300">
             </div>
-        </div>
-        <div id="tier-list">
-            <div class="tier">
-                <div class="label S">
-                    <h2>S</h2>
-                </div>
-                <div class="slot" data-tier="S"></div>
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-extrabold text-yellow-400 mb-4 fade-in text-glow delay-1">
+                Kibod.online
+            </h1>
+            <p class="text-xl md:text-2xl lg:text-3xl text-gray-100 fade-in delay-2">
+                Your ultimate hub for mechanical keyboard enthusiasts.
+            </p>
+        </header>
+
+        <!-- Introduction section with a welcoming message -->
+        <section class="mb-10 fade-in delay-3">
+            <p class="text-base md:text-lg lg:text-xl text-gray-200 leading-relaxed max-w-2xl mx-auto">
+                Dive into a world where every click counts, every switch matters, and every build tells a story. We're
+                crafting the definitive online space for mechanical keyboard hobbyists, from beginners to seasoned
+                veterans. Discover detailed information, share your passion, and connect with a vibrant community.
+            </p>
+        </section>
+
+        <!-- Section introducing subdomains as areas to explore -->
+        <section class="mb-10 fade-in delay-4">
+            <h2 class="text-2xl md:text-3xl font-semibold text-yellow-400 mb-4">
+                Explore Specialized Sections:
+            </h2>
+            <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                <!-- Example subdomain links with hover effects, now with yellow background and black text -->
+                <a href="tiers.html"
+                    class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                    tiers.kibod.online
+                </a>
             </div>
-            <div class="tier">
-                <div class="label A">
-                    <h2>A</h2>
-                </div>
-                <div class="slot" data-tier="A"></div>
-            </div>
-            <div class="tier">
-                <div class="label B">
-                    <h2>B</h2>
-                </div>
-                <div class="slot" data-tier="B"></div>
-            </div>
-            <div class="tier">
-                <div class="label C">
-                    <h2>C</h2>
-                </div>
-                <div class="slot" data-tier="C"></div>
-            </div>
-            <div class="tier">
-                <div class="label D">
-                    <h2>D</h2>
-                </div>
-                <div class="slot" data-tier="D"></div>
-            </div>
-            <div class="tier">
-                <div class="label E">
-                    <h2>E</h2>
-                </div>
-                <div class="slot" data-tier="E"></div>
-            </div>
-            <div class="tier">
-                <div class="label F">
-                    <h2>F</h2>
-                </div>
-                <div class="slot" data-tier="F"></div>
-            </div>
-        </div>
+        </section>
+
+        <!-- Footer section with a closing message and copyright -->
+        <footer class="mt-8 fade-in delay-5">
+            <p class="text-md md:text-lg text-gray-400 mb-2">
+                Stay tuned for more exciting features and an even richer mechanical keyboard experience!
+            </p>
+            <p class="text-sm text-gray-500">
+                &copy; 2025 Kibod.online. All rights reserved.
+            </p>
+        </footer>
+
     </div>
 
-    <div class="right-panel">
-        <div class="search" style="display: flex; align-items: center; justify-content: space-between;">
-            <h3 style="margin: 0;">Switches List</h3>
-            <button id="addSwitchBtn" title="Add Switch"
-                style="background: none; border: none; color: #fff; font-size: 1.5em; cursor: pointer; margin-left: 8px; padding: 0; display: flex; align-items: center;">
-                <span style="font-size: 1.5em; line-height: 1;">&#43;</span>
-            </button>
-        </div>
-        <div style="padding: 10px; border-bottom: 2px solid #333;">
-            <input type="text" id="searchInput" placeholder="Search switches..."
-                style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 1em; background: #222; color: white;" />
-        </div>
-        <div class="scroll-area">
-            <div class="scrollable-switches slot" id="pool"></div>
-            <div class="scroll-helper" id="scrollHelper" style="display:none;"></div>
-        </div>
-    </div>
-
-    <!-- Modal for adding switch -->
-    <div id="addSwitchModal"
-        style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
-        <div
-            style="background:#222; padding:24px 20px 16px 20px; border-radius:8px; min-width:300px; max-width:90vw; box-shadow:0 4px 24px #000; position:relative;">
-            <button id="closeModalBtn"
-                style="position:absolute; top:8px; right:12px; background:none; border:none; color:#fff; font-size:1.2em; cursor:pointer;">&times;</button>
-            <h3 style="margin-top:0;">Add New Switch</h3>
-            <form id="addSwitchForm">
-                <label style="display:block; margin-bottom:8px;">Name:<br>
-                    <input id="switchNameInput" type="text" required
-                        style="width:100%; padding:6px; border-radius:4px; border:none; background:#333; color:#fff; margin-top:2px;">
-                </label>
-                <label style="display:block; margin-bottom:12px;">Image URL:<br>
-                    <input id="switchImgInput" type="url" required
-                        style="width:100%; padding:6px; border-radius:4px; border:none; background:#333; color:#fff; margin-top:2px;">
-                </label>
-                <button type="submit"
-                    style="background:#69db7c; color:#111; border:none; border-radius:4px; padding:8px 16px; font-weight:bold; cursor:pointer; width:100%;">Add
-                    Switch</button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        window.addEventListener('DOMContentLoaded', function () {
-            const pool = document.getElementById('pool');
-            const resetButton = document.getElementById('resetButton');
-            const exportButton = document.getElementById('exportButton');
-            const tierSlots = document.querySelectorAll('#tier-list .slot');
-
-            let allSwitchData = [];
-            let currentSwitchData = [];
-            let draggedItem = null;
-
-            function renderSwitches(filter = '') {
-                pool.innerHTML = '';
-                const filteredSwitches = currentSwitchData.filter(s =>
-                    s.name.toLowerCase().includes(filter.toLowerCase())
-                );
-
-                filteredSwitches.forEach(s => {
-                    const div = document.createElement('div');
-                    div.className = 'item';
-                    div.draggable = true;
-                    div.dataset.switchName = s.name;
-                    div.innerHTML = `
-                    <img src="${s.img}" alt="${s.name}" />
-                    <div class="item-label"><span>${s.name}</span></div>
-                `;
-                    pool.appendChild(div);
-                });
-                initDragAndDrop(); // Re-initialize drag and drop for newly rendered items
-            }
-
-            function initDragAndDrop() {
-                const draggables = document.querySelectorAll('.item');
-                const allDropTargets = document.querySelectorAll('.slot');
-
-                draggables.forEach(item => {
-                    // Remove existing listeners to prevent duplicates (important after re-rendering)
-                    item.removeEventListener('dragstart', handleDragStart);
-                    item.removeEventListener('dragend', handleDragEnd);
-                    item.addEventListener('dragstart', handleDragStart);
-                    item.addEventListener('dragend', handleDragEnd);
-
-                    // Touch events for mobile drag
-                    item.removeEventListener('touchstart', handleTouchStart);
-                    item.removeEventListener('touchmove', handleTouchMove);
-                    item.removeEventListener('touchend', handleTouchEnd);
-                    item.addEventListener('touchstart', handleTouchStart, {
-                        passive: false
-                    });
-                    item.addEventListener('touchmove', handleTouchMove, {
-                        passive: false
-                    });
-                    item.addEventListener('touchend', handleTouchEnd, {
-                        passive: false
-                    });
-                });
-
-                allDropTargets.forEach(slot => {
-                    slot.removeEventListener('dragover', handleDragOver);
-                    slot.removeEventListener('dragleave', handleDragLeave);
-                    slot.removeEventListener('drop', handleDrop);
-                    slot.addEventListener('dragover', handleDragOver);
-                    slot.addEventListener('dragleave', handleDragLeave);
-                    slot.addEventListener('drop', handleDrop);
-                });
-            }
-
-            function handleDragStart(e) {
-                draggedItem = this; // 'this' refers to the item being dragged
-                e.dataTransfer.setData('text/plain', this.dataset.switchName || this.querySelector('.item-label span').textContent);
-                e.dataTransfer.effectAllowed = 'move';
-                setTimeout(() => this.classList.add('dragging-hidden'), 0);
-            }
-
-            function handleDragEnd() {
-                if (draggedItem) {
-                    draggedItem.classList.remove('dragging-hidden');
-                    draggedItem = null;
-                }
-            }
-
-            function handleDragOver(e) {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                this.classList.add('drag-over');
-            }
-
-            function handleDragLeave() {
-                this.classList.remove('drag-over');
-            }
-
-            function handleDrop(e) {
-                e.preventDefault();
-                this.classList.remove('drag-over');
-
-                if (draggedItem) {
-                    // If dropping into the pool, ensure it's re-initialized for dragging
-                    if (this.id === 'pool') {
-                        this.appendChild(draggedItem);
-                        // No need to re-initDrag() here, as the item itself retains its draggable property
-                        // and its listeners are still active. The renderSwitches function
-                        // will re-attach all listeners when it's called (e.g. on search or reset).
-                    } else {
-                        this.appendChild(draggedItem);
-                    }
-                }
-            }
-
-            // Touch drag-and-drop for mobile
-            let touchDragItem = null;
-            let touchDragOrigin = null;
-
-            function handleTouchStart(e) {
-                if (e.touches.length !== 1) return;
-                touchDragItem = this;
-                touchDragOrigin = this.parentElement;
-                this.classList.add('dragging-hidden');
-                e.preventDefault();
-            }
-
-            function handleTouchMove(e) {
-                if (!touchDragItem) return;
-                const touch = e.touches[0];
-                const el = document.elementFromPoint(touch.clientX, touch.clientY);
-                document.querySelectorAll('.slot').forEach(slot => slot.classList.remove('drag-over'));
-                if (el && el.classList.contains('slot')) {
-                    el.classList.add('drag-over');
-                }
-                // --- Auto-scroll when dragging near top/bottom ---
-                const scrollMargin = 60; // px from edge to start scrolling
-                const scrollSpeed = 18; // px per move event
-                if (touch.clientY < scrollMargin) {
-                    window.scrollBy({ top: -scrollSpeed, behavior: 'auto' });
-                } else if (touch.clientY > window.innerHeight - scrollMargin) {
-                    window.scrollBy({ top: scrollSpeed, behavior: 'auto' });
-                }
-                e.preventDefault();
-            }
-
-            function handleTouchEnd(e) {
-                if (!touchDragItem) return;
-                const touch = e.changedTouches[0];
-                const el = document.elementFromPoint(touch.clientX, touch.clientY);
-                document.querySelectorAll('.slot').forEach(slot => slot.classList.remove('drag-over'));
-                if (el && el.classList.contains('slot')) {
-                    el.appendChild(touchDragItem);
-                } else if (touchDragOrigin) {
-                    touchDragOrigin.appendChild(touchDragItem);
-                }
-                touchDragItem.classList.remove('dragging-hidden');
-                touchDragItem = null;
-                touchDragOrigin = null;
-                e.preventDefault();
-            }
-
-            // --- Action Buttons ---
-            resetButton.addEventListener('click', () => {
-                // Clear all tier slots
-                tierSlots.forEach(slot => {
-                    while (slot.firstChild) {
-                        pool.appendChild(slot.firstChild); // Move items back to pool
-                    }
-                });
-                // Re-render all switches in the pool (effectively resetting their order too)
-                renderSwitches();
-                searchInput.value = ''; // Clear search input
-            });
-
-            exportButton.addEventListener('click', () => {
-                const tierListElement = document.getElementById('tier-list');
-                // Temporarily hide scrollbars for cleaner screenshot if any
-                const originalOverflow = document.body.style.overflow;
-                document.body.style.overflow = 'hidden';
-
-                html2canvas(tierListElement, {
-                    scale: 2, // Increase scale for better quality image
-                    logging: false, // Disable console logs from html2canvas
-                    useCORS: true // Important for images loaded from different origins
-                }).then(canvas => {
-                    // Restore original overflow
-                    document.body.style.overflow = originalOverflow;
-
-                    const link = document.createElement('a');
-                    link.download = 'keyboard-switch-tier-list.png';
-                    link.href = canvas.toDataURL('image/png');
-                    link.click(); // Programmatically click the link to trigger download
-                }).catch(error => {
-                    document.body.style.overflow = originalOverflow; // Ensure overflow is reset even on error
-                    console.error('Error exporting tier list:', error);
-                    alert('Could not export image. Please check the console for details.');
-                });
-            });
-
-            // --- Initial Load ---
-            const searchInput = document.getElementById('searchInput');
-            // Defensive check for searchInput
-            if (!searchInput) {
-                console.error('Element with id="searchInput" not found. Please ensure the input exists in your HTML.');
-            } else {
-                searchInput.addEventListener('input', (e) => {
-                    renderSwitches(e.target.value);
-                });
-            }
-            const firebaseConfig = {
-                apiKey: window.ENV?.FIREBASE_API_KEY,
-                authDomain: window.ENV?.FIREBASE_AUTH_DOMAIN,
-                projectId: window.ENV?.FIREBASE_PROJECT_ID,
-                appId: window.ENV?.FIREBASE_APP_ID,
-                databaseURL: window.ENV?.FIREBASE_DATABASE_URL
-            };
-
-            firebase.initializeApp(firebaseConfig);
-            const database = firebase.database();
-
-            database.ref('/switches').once('value')
-                .then((snapshot) => {
-                    let switches = []
-                    const data = snapshot.val()
-                    for (a in data) {
-                        switches.push(data[a]);
-                    }
-                    currentSwitchData = [...switches];
-                    renderSwitches();
-                })
-                .catch((err) => {
-                    console.error('Realtime Database fetch failed:', err);
-                });
-
-            // --- Rate limit for adding switches ---
-            let lastAddTime = 0;
-            const ADD_SWITCH_COOLDOWN = 10000; // 10 seconds
-
-            // Function to add a new switch option to Firebase Realtime Database
-            function addSwitchOption(switchObj) {
-                const now = Date.now();
-                if (now - lastAddTime < ADD_SWITCH_COOLDOWN) {
-                    alert('Please wait a few seconds before adding another switch.');
-                    return;
-                }
-                lastAddTime = now;
-                database.ref('/switches').push(switchObj)
-                    .then(() => {
-                        console.log('Switch added successfully:', switchObj);
-                        // Optionally, fetch and re-render switches
-                        database.ref('/switches').once('value')
-                            .then((snapshot) => {
-                                let switches = [];
-                                const data = snapshot.val();
-                                for (a in data) {
-                                    switches.push(data[a]);
-                                }
-                                currentSwitchData = [...switches];
-                                renderSwitches();
-                            });
-                    })
-                    .catch((err) => {
-                        console.error('Failed to add switch:', err);
-                    });
-            }
-
-            // Modal logic for adding switch
-            const addSwitchBtn = document.getElementById('addSwitchBtn');
-            const addSwitchModal = document.getElementById('addSwitchModal');
-            const closeModalBtn = document.getElementById('closeModalBtn');
-            const addSwitchForm = document.getElementById('addSwitchForm');
-            const switchNameInput = document.getElementById('switchNameInput');
-            const switchImgInput = document.getElementById('switchImgInput');
-
-            addSwitchBtn.addEventListener('click', () => {
-                addSwitchModal.style.display = 'flex';
-                switchNameInput.value = '';
-                switchImgInput.value = '';
-                switchNameInput.focus();
-            });
-            closeModalBtn.addEventListener('click', () => {
-                addSwitchModal.style.display = 'none';
-            });
-            addSwitchModal.addEventListener('click', (e) => {
-                if (e.target === addSwitchModal) addSwitchModal.style.display = 'none';
-            });
-            addSwitchForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const name = switchNameInput.value.trim();
-                const img = switchImgInput.value.trim();
-                if (name && img) {
-                    addSwitchOption({ name, img });
-                    addSwitchModal.style.display = 'none';
-                }
-            });
-
-            // Show scroll helper only on mobile
-            function updateScrollHelperVisibility() {
-                const scrollHelper = document.getElementById('scrollHelper');
-                if (window.innerWidth <= 900) {
-                    scrollHelper.style.display = 'block';
-                } else {
-                    scrollHelper.style.display = 'none';
-                }
-            }
-            window.addEventListener('resize', updateScrollHelperVisibility);
-            updateScrollHelperVisibility();
-
-            // Scroll helper logic
-            const scrollHelper = document.getElementById('scrollHelper');
-            const scrollableSwitches = document.getElementById('pool');
-            let isScrolling = false;
-            let lastY = 0;
-            function startScroll(e) {
-                isScrolling = true;
-                lastY = e.touches ? e.touches[0].clientY : e.clientY;
-                scrollHelper.style.background = 'rgba(255,255,255,0.18)';
-                document.body.style.userSelect = 'none';
-            }
-            function moveScroll(e) {
-                if (!isScrolling) return;
-                const y = e.touches ? e.touches[0].clientY : e.clientY;
-                const delta = y - lastY;
-                scrollableSwitches.scrollTop += delta * 20; // Adjust scroll speed as needed
-                lastY = y;
-                e.preventDefault();
-            }
-            function endScroll() {
-                isScrolling = false;
-                scrollHelper.style.background = '';
-                document.body.style.userSelect = '';
-            }
-            scrollHelper.addEventListener('touchstart', startScroll, { passive: false });
-            scrollHelper.addEventListener('touchmove', moveScroll, { passive: false });
-            scrollHelper.addEventListener('touchend', endScroll);
-            scrollHelper.addEventListener('mousedown', startScroll);
-            window.addEventListener('mousemove', moveScroll);
-            window.addEventListener('mouseup', endScroll);
-        });
-    </script>
 </body>
 
 </html>

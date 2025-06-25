@@ -1,0 +1,382 @@
+        body {
+            font-family: sans-serif;
+            background: #111;
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: auto;
+            /* Enable scrolling on all devices */
+        }
+
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+                height: 100vh;
+                min-height: 100vh;
+                overflow: hidden;
+                /* Prevent body scroll on mobile, only right panel scrolls */
+            }
+
+            .left-panel,
+            .right-panel {
+                width: 100% !important;
+                min-width: 0;
+                max-width: 100vw;
+                box-sizing: border-box;
+            }
+
+            .left-panel {
+                padding: 10px;
+                overflow-y: visible;
+                /* No scroll on left panel */
+            }
+
+            .right-panel {
+                border-left: none;
+                border-top: 2px solid #333;
+                width: 100% !important;
+                min-width: 0;
+                max-width: 100vw;
+                display: flex;
+                flex-direction: column;
+                height: 60vh;
+                /* Set a height for right panel on mobile */
+            }
+
+            .scrollable-switches {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 6px;
+                padding: 6px;
+                max-height: 50vh;
+                padding-right: 40px;
+                height: 100%;
+                overflow-y: auto;
+                /* Only this element scrolls on mobile */
+            }
+
+            .scrollable-switches::after {
+                content: '';
+                display: block;
+                width: 40px;
+                /* match your scroll helper + gap */
+                grid-column: span 1;
+                height: 1px;
+                pointer-events: none;
+            }
+
+            .item {
+                width: 80px;
+                height: 80px;
+                font-size: 0.7em;
+            }
+
+            .label {
+                width: 30px;
+                height: 70px;
+                font-size: 1em;
+            }
+
+            .scroll-helper {
+                display: block;
+                position: absolute;
+                top: 70px;
+                right: 8px;
+                width: 36px;
+                height: calc(100% - 80px);
+                background: rgba(255, 255, 255, 0.18);
+                border-radius: 18px;
+                border: 2px solid rgba(255, 255, 255, 0.25);
+                z-index: 100;
+                cursor: grab;
+                touch-action: none;
+                box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.18);
+            }
+
+            .scroll-helper:active {
+                background: rgba(255, 255, 255, 0.32);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        @media (min-width: 901px) {
+            .scroll-helper {
+                display: none !important;
+            }
+        }
+
+        .left-panel {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            /* Allow scrolling for tier list if it gets too long */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel {
+            width: 22%;
+            background: #111;
+            border-left: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            position: relative;
+            /* Include padding/border in width */
+        }
+
+        .right-panel .search {
+            padding: 10px;
+            border-bottom: 2px solid #333;
+        }
+
+        .search input {
+            width: calc(100% - 16px);
+            /* Adjust width for padding */
+            padding: 8px;
+            border-radius: 4px;
+            border: none;
+            font-size: 1em;
+            background: #222;
+            color: white;
+        }
+
+        .scrollable-switches {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            /* Responsive columns */
+            gap: 10px;
+            justify-content: center;
+            align-content: start;
+        }
+
+        .tier {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .label {
+            width: 40px;
+            height: 100px;
+            font-weight: bold;
+            text-align: center;
+            margin-right: 10px;
+            border-radius: 4px;
+            padding: 5px;
+            color: black;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            /* Make S, A, B labels more prominent */
+        }
+
+        .label h2 {
+            margin: 0;
+            /* Remove default margin from h2 */
+            font-size: 1em;
+            /* Control font size within the label div */
+        }
+
+        .slot {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            /* Align items to the top of the slot */
+            min-height: 110px;
+            /* Minimum height for empty slots */
+            gap: 5px;
+            flex-grow: 1;
+            padding: 5px;
+            border: none;
+            border-radius: 4px;
+        }
+
+        .item {
+            background: #333;
+            border: 1px solid #888;
+            border-radius: 10px;
+            padding: 5px;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            width: 100px;
+            height: 100px;
+            /* Keep height fixed to control item size */
+            flex-shrink: 0;
+            /* Prevent items from shrinking in flex containers */
+        }
+
+        .item img {
+            max-width: 50px;
+            max-height: 50px;
+            object-fit: contain;
+            margin-bottom: 5px;
+            border-radius: 2px;
+        }
+
+        .item-label {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding: 0 2px;
+            box-sizing: border-box;
+            flex-grow: 1;
+            /* Allow label to take available vertical space if content wraps */
+        }
+
+        .item-label span {
+            word-wrap: break-word;
+            white-space: normal;
+            line-height: 1.2;
+        }
+
+        .item:active {
+            cursor: grabbing;
+        }
+
+        /* Tier specific colors */
+        .S {
+            background: #ff6b6b;
+        }
+
+        .A {
+            background: #ffa94d;
+        }
+
+        .B {
+            background: #ffd43b;
+        }
+
+        .C {
+            background: #69db7c;
+        }
+
+        .D {
+            background: #74c0fc;
+        }
+
+        .E {
+            background: #9775fa;
+        }
+
+        .F {
+            background: #f783ff;
+        }
+
+        /* Drag over effect */
+        .slot.drag-over {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: #eee;
+        }
+
+        .dragging-hidden {
+            opacity: 0;
+        }
+
+        .top-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+
+        .top-bar h3 {
+            margin: 0 0 10px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        .action-buttons button {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+
+        .action-buttons button:hover {
+            background-color: #777;
+        }
+
+        /* --- 1. Flex wrapper for scroll area --- */
+        .scroll-area {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            height: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .scrollable-switches {
+                flex: 1 1 0%;
+                overflow-y: auto;
+                padding: 10px 0 10px 10px;
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+                gap: 10px;
+                justify-content: center;
+                align-content: start;
+                max-height: 50vh;
+                height: 100%;
+            }
+
+            .scroll-helper {
+                display: block;
+                width: 36px;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.18);
+                border-radius: 18px;
+                border: 2px solid rgba(255, 255, 255, 0.25);
+                margin-left: 4px;
+                z-index: 1;
+                cursor: grab;
+                touch-action: none;
+                box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.18);
+            }
+
+            .scroll-helper:active {
+                background: rgba(255, 255, 255, 0.32);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+
+            /* Remove grid hacks */
+            .scrollable-switches::after {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .action-buttons button {
+                margin: 5px 0 0 0;
+                width: 100%;
+            }
+        }

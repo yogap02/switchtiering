@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Switch Tier List</title>
+    <script src="env.js"></script>
+    <script src="tiers.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="tiers.css">
+</head>
+
+<body>
+    <div class="left-panel">
+        <div class="top-bar">
+            <button id="goHomeBtn" style="margin-right:12px; background:#222; color:#fff; border:none; border-radius:4px; padding:6px 14px; font-size:1em; cursor:pointer;">&#8592; Home</button>
+            <h3 style="display:inline-block; margin:0;">Mechanical Keyboard Switch Tier List</h3>
+            <div class="action-buttons">
+                <button id="resetButton">Reset</button>
+                <button id="exportButton">Export as Image</button>
+            </div>
+        </div>
+        <div id="tier-list">
+            <div class="tier">
+                <div class="label S">
+                    <h2>S</h2>
+                </div>
+                <div class="slot" data-tier="S"></div>
+            </div>
+            <div class="tier">
+                <div class="label A">
+                    <h2>A</h2>
+                </div>
+                <div class="slot" data-tier="A"></div>
+            </div>
+            <div class="tier">
+                <div class="label B">
+                    <h2>B</h2>
+                </div>
+                <div class="slot" data-tier="B"></div>
+            </div>
+            <div class="tier">
+                <div class="label C">
+                    <h2>C</h2>
+                </div>
+                <div class="slot" data-tier="C"></div>
+            </div>
+            <div class="tier">
+                <div class="label D">
+                    <h2>D</h2>
+                </div>
+                <div class="slot" data-tier="D"></div>
+            </div>
+            <div class="tier">
+                <div class="label E">
+                    <h2>E</h2>
+                </div>
+                <div class="slot" data-tier="E"></div>
+            </div>
+            <div class="tier">
+                <div class="label F">
+                    <h2>F</h2>
+                </div>
+                <div class="slot" data-tier="F"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="search" style="display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0;">Switches List</h3>
+            <button id="addSwitchBtn" title="Add Switch"
+                style="background: none; border: none; color: #fff; font-size: 1.5em; cursor: pointer; margin-left: 8px; padding: 0; display: flex; align-items: center;">
+                <span style="font-size: 1.5em; line-height: 1;">&#43;</span>
+            </button>
+        </div>
+        <div style="padding: 10px; border-bottom: 2px solid #333;">
+            <input type="text" id="searchInput" placeholder="Search switches..."
+                style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 1em; background: #222; color: white;" />
+        </div>
+        <div class="scroll-area">
+            <div class="scrollable-switches slot" id="pool"></div>
+            <div class="scroll-helper" id="scrollHelper" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Modal for adding switch -->
+    <div id="addSwitchModal"
+        style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+        <div
+            style="background:#222; padding:24px 20px 16px 20px; border-radius:8px; min-width:300px; max-width:90vw; box-shadow:0 4px 24px #000; position:relative;">
+            <button id="closeModalBtn"
+                style="position:absolute; top:8px; right:12px; background:none; border:none; color:#fff; font-size:1.2em; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0;">Add New Switch</h3>
+            <form id="addSwitchForm">
+                <label style="display:block; margin-bottom:8px;">Name:<br>
+                    <input id="switchNameInput" type="text" required
+                        style="width:100%; padding:6px; border-radius:4px; border:none; background:#333; color:#fff; margin-top:2px;">
+                </label>
+                <label style="display:block; margin-bottom:12px;">Image URL:<br>
+                    <input id="switchImgInput" type="url" required
+                        style="width:100%; padding:6px; border-radius:4px; border:none; background:#333; color:#fff; margin-top:2px;">
+                </label>
+                <button type="submit"
+                    style="background:#69db7c; color:#111; border:none; border-radius:4px; padding:8px 16px; font-weight:bold; cursor:pointer; width:100%;">Add
+                    Switch</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            const pool = document.getElementById('pool');
+            const resetButton = document.getElementById('resetButton');
+            const exportButton = document.getElementById('exportButton');
+            const tierSlots = document.querySelectorAll('#tier-list .slot');
+
+            let allSwitchData = [];
+            let currentSwitchData = [];
+            let draggedItem = null;
+
+            function renderSwitches(filter = '') {
+                pool.innerHTML = '';
+                const filteredSwitches = currentSwitchData.filter(s =>
+                    s.name.toLowerCase().includes(filter.toLowerCase())
+                );
+
+                filteredSwitches.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'item';
+                    div.draggable = true;
+                    div.dataset.switchName = s.name;
+                    div.innerHTML = `
+                    <img src="${s.img}" alt="${s.name}" />
+                    <div class="item-label"><span>${s.name}</span></div>
+                `;
+                    pool.appendChild(div);
+                });
+                initDragAndDrop(); // Re-initialize drag and drop for newly rendered items
+            }
+
+            function initDragAndDrop() {
+                const draggables = document.querySelectorAll('.item');
+                const allDropTargets = document.querySelectorAll('.slot');
+
+                draggables.forEach(item => {
+                    // Remove existing listeners to prevent duplicates (important after re-rendering)
+                    item.removeEventListener('dragstart', handleDragStart);
+                    item.removeEventListener('dragend', handleDragEnd);
+                    item.addEventListener('dragstart', handleDragStart);
+                    item.addEventListener('dragend', handleDragEnd);
+
+                    // Touch events for mobile drag
+                    item.removeEventListener('touchstart', handleTouchStart);
+                    item.removeEventListener('touchmove', handleTouchMove);
+                    item.removeEventListener('touchend', handleTouchEnd);
+                    item.addEventListener('touchstart', handleTouchStart, {
+                        passive: false
+                    });
+                    item.addEventListener('touchmove', handleTouchMove, {
+                        passive: false
+                    });
+                    item.addEventListener('touchend', handleTouchEnd, {
+                        passive: false
+                    });
+                });
+
+                allDropTargets.forEach(slot => {
+                    slot.removeEventListener('dragover', handleDragOver);
+                    slot.removeEventListener('dragleave', handleDragLeave);
+                    slot.removeEventListener('drop', handleDrop);
+                    slot.addEventListener('dragover', handleDragOver);
+                    slot.addEventListener('dragleave', handleDragLeave);
+                    slot.addEventListener('drop', handleDrop);
+                });
+            }
+
+            function handleDragStart(e) {
+                draggedItem = this; // 'this' refers to the item being dragged
+                e.dataTransfer.setData('text/plain', this.dataset.switchName || this.querySelector('.item-label span').textContent);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => this.classList.add('dragging-hidden'), 0);
+            }
+
+            function handleDragEnd() {
+                if (draggedItem) {
+                    draggedItem.classList.remove('dragging-hidden');
+                    draggedItem = null;
+                }
+            }
+
+            function handleDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            }
+
+            function handleDragLeave() {
+                this.classList.remove('drag-over');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+
+                if (draggedItem) {
+                    // If dropping into the pool, ensure it's re-initialized for dragging
+                    if (this.id === 'pool') {
+                        this.appendChild(draggedItem);
+                        // No need to re-initDrag() here, as the item itself retains its draggable property
+                        // and its listeners are still active. The renderSwitches function
+                        // will re-attach all listeners when it's called (e.g. on search or reset).
+                    } else {
+                        this.appendChild(draggedItem);
+                    }
+                }
+            }
+
+            // Touch drag-and-drop for mobile
+            let touchDragItem = null;
+            let touchDragOrigin = null;
+
+            function handleTouchStart(e) {
+                if (e.touches.length !== 1) return;
+                touchDragItem = this;
+                touchDragOrigin = this.parentElement;
+                this.classList.add('dragging-hidden');
+                e.preventDefault();
+            }
+
+            function handleTouchMove(e) {
+                if (!touchDragItem) return;
+                const touch = e.touches[0];
+                const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                document.querySelectorAll('.slot').forEach(slot => slot.classList.remove('drag-over'));
+                if (el && el.classList.contains('slot')) {
+                    el.classList.add('drag-over');
+                }
+                // --- Auto-scroll when dragging near top/bottom ---
+                const scrollMargin = 60; // px from edge to start scrolling
+                const scrollSpeed = 18; // px per move event
+                if (touch.clientY < scrollMargin) {
+                    window.scrollBy({ top: -scrollSpeed, behavior: 'auto' });
+                } else if (touch.clientY > window.innerHeight - scrollMargin) {
+                    window.scrollBy({ top: scrollSpeed, behavior: 'auto' });
+                }
+                e.preventDefault();
+            }
+
+            function handleTouchEnd(e) {
+                if (!touchDragItem) return;
+                const touch = e.changedTouches[0];
+                const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                document.querySelectorAll('.slot').forEach(slot => slot.classList.remove('drag-over'));
+                if (el && el.classList.contains('slot')) {
+                    el.appendChild(touchDragItem);
+                } else if (touchDragOrigin) {
+                    touchDragOrigin.appendChild(touchDragItem);
+                }
+                touchDragItem.classList.remove('dragging-hidden');
+                touchDragItem = null;
+                touchDragOrigin = null;
+                e.preventDefault();
+            }
+
+            // --- Action Buttons ---
+            resetButton.addEventListener('click', () => {
+                // Clear all tier slots
+                tierSlots.forEach(slot => {
+                    while (slot.firstChild) {
+                        pool.appendChild(slot.firstChild); // Move items back to pool
+                    }
+                });
+                // Re-render all switches in the pool (effectively resetting their order too)
+                renderSwitches();
+                searchInput.value = ''; // Clear search input
+            });
+
+            exportButton.addEventListener('click', () => {
+                const tierListElement = document.getElementById('tier-list');
+                // Temporarily hide scrollbars for cleaner screenshot if any
+                const originalOverflow = document.body.style.overflow;
+                document.body.style.overflow = 'hidden';
+
+                html2canvas(tierListElement, {
+                    scale: 2, // Increase scale for better quality image
+                    logging: false, // Disable console logs from html2canvas
+                    useCORS: true // Important for images loaded from different origins
+                }).then(canvas => {
+                    // Restore original overflow
+                    document.body.style.overflow = originalOverflow;
+
+                    const link = document.createElement('a');
+                    link.download = 'keyboard-switch-tier-list.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click(); // Programmatically click the link to trigger download
+                }).catch(error => {
+                    document.body.style.overflow = originalOverflow; // Ensure overflow is reset even on error
+                    console.error('Error exporting tier list:', error);
+                    alert('Could not export image. Please check the console for details.');
+                });
+            });
+
+            // --- Initial Load ---
+            const searchInput = document.getElementById('searchInput');
+            // Defensive check for searchInput
+            if (!searchInput) {
+                console.error('Element with id="searchInput" not found. Please ensure the input exists in your HTML.');
+            } else {
+                searchInput.addEventListener('input', (e) => {
+                    renderSwitches(e.target.value);
+                });
+            }
+            const firebaseConfig = {
+                apiKey: window.ENV?.FIREBASE_API_KEY,
+                authDomain: window.ENV?.FIREBASE_AUTH_DOMAIN,
+                projectId: window.ENV?.FIREBASE_PROJECT_ID,
+                appId: window.ENV?.FIREBASE_APP_ID,
+                databaseURL: window.ENV?.FIREBASE_DATABASE_URL
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
+            database.ref('/switches').once('value')
+                .then((snapshot) => {
+                    let switches = []
+                    const data = snapshot.val()
+                    for (a in data) {
+                        switches.push(data[a]);
+                    }
+                    currentSwitchData = [...switches];
+                    renderSwitches();
+                })
+                .catch((err) => {
+                    console.error('Realtime Database fetch failed:', err);
+                });
+
+            // --- Rate limit for adding switches ---
+            let lastAddTime = 0;
+            const ADD_SWITCH_COOLDOWN = 10000; // 10 seconds
+
+            // Function to add a new switch option to Firebase Realtime Database
+            function addSwitchOption(switchObj) {
+                const now = Date.now();
+                if (now - lastAddTime < ADD_SWITCH_COOLDOWN) {
+                    alert('Please wait a few seconds before adding another switch.');
+                    return;
+                }
+                lastAddTime = now;
+                database.ref('/switches').push(switchObj)
+                    .then(() => {
+                        console.log('Switch added successfully:', switchObj);
+                        // Optionally, fetch and re-render switches
+                        database.ref('/switches').once('value')
+                            .then((snapshot) => {
+                                let switches = [];
+                                const data = snapshot.val();
+                                for (a in data) {
+                                    switches.push(data[a]);
+                                }
+                                currentSwitchData = [...switches];
+                                renderSwitches();
+                            });
+                    })
+                    .catch((err) => {
+                        console.error('Failed to add switch:', err);
+                    });
+            }
+
+            // Modal logic for adding switch
+            const addSwitchBtn = document.getElementById('addSwitchBtn');
+            const addSwitchModal = document.getElementById('addSwitchModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const addSwitchForm = document.getElementById('addSwitchForm');
+            const switchNameInput = document.getElementById('switchNameInput');
+            const switchImgInput = document.getElementById('switchImgInput');
+
+            addSwitchBtn.addEventListener('click', () => {
+                addSwitchModal.style.display = 'flex';
+                switchNameInput.value = '';
+                switchImgInput.value = '';
+                switchNameInput.focus();
+            });
+            closeModalBtn.addEventListener('click', () => {
+                addSwitchModal.style.display = 'none';
+            });
+            addSwitchModal.addEventListener('click', (e) => {
+                if (e.target === addSwitchModal) addSwitchModal.style.display = 'none';
+            });
+            addSwitchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = switchNameInput.value.trim();
+                const img = switchImgInput.value.trim();
+                if (name && img) {
+                    addSwitchOption({ name, img });
+                    addSwitchModal.style.display = 'none';
+                }
+            });
+
+            // Go Home button logic
+            const goHomeBtn = document.getElementById('goHomeBtn');
+            if (goHomeBtn) {
+                goHomeBtn.addEventListener('click', function () {
+                    window.location.href = 'index.html';
+                });
+            }
+
+            // Show scroll helper only on mobile
+            function updateScrollHelperVisibility() {
+                const scrollHelper = document.getElementById('scrollHelper');
+                if (window.innerWidth <= 900) {
+                    scrollHelper.style.display = 'block';
+                } else {
+                    scrollHelper.style.display = 'none';
+                }
+            }
+            window.addEventListener('resize', updateScrollHelperVisibility);
+            updateScrollHelperVisibility();
+
+            // Scroll helper logic
+            const scrollHelper = document.getElementById('scrollHelper');
+            const scrollableSwitches = document.getElementById('pool');
+            let isScrolling = false;
+            let lastY = 0;
+            function startScroll(e) {
+                isScrolling = true;
+                lastY = e.touches ? e.touches[0].clientY : e.clientY;
+                scrollHelper.style.background = 'rgba(255,255,255,0.18)';
+                document.body.style.userSelect = 'none';
+            }
+            function moveScroll(e) {
+                if (!isScrolling) return;
+                const y = e.touches ? e.touches[0].clientY : e.clientY;
+                const delta = y - lastY;
+                scrollableSwitches.scrollTop += delta * 20; // Adjust scroll speed as needed
+                lastY = y;
+                e.preventDefault();
+            }
+            function endScroll() {
+                isScrolling = false;
+                scrollHelper.style.background = '';
+                document.body.style.userSelect = '';
+            }
+            scrollHelper.addEventListener('touchstart', startScroll, { passive: false });
+            scrollHelper.addEventListener('touchmove', moveScroll, { passive: false });
+            scrollHelper.addEventListener('touchend', endScroll);
+            scrollHelper.addEventListener('mousedown', startScroll);
+            window.addEventListener('mousemove', moveScroll);
+            window.addEventListener('mouseup', endScroll);
+        });
+    </script>
+</body>
+
+</html>
